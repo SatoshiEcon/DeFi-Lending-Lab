@@ -214,15 +214,15 @@
     <p class="small"><strong>Goal:</strong> calculate how much Maple can withdraw today, and explain the difference between a pool that's illiquid and one that's insolvent.</p>
     <div class="why">
       <p><strong>What's happening:</strong> a supplier can only withdraw cash that's actually sitting in the pool. Money that's been lent out isn't there.</p>
-      <p><strong>Available liquidity</strong> = total supplied − total borrowed. If Maple wants more than that, it gets what's available now and waits for the rest.</p>
+      <p><strong>Available liquidity</strong> = total supplied − total borrowed. A withdrawal request for more than that doesn't partly go through. It simply fails. There's no queue holding Maple's place: Maple has to request an amount the pool can pay right now, then come back and try again later for the rest, competing with every other supplier who wants out.</p>
       <p><strong>Illiquid is not the same as insolvent.</strong> A pool is <em>illiquid</em> when its cash is lent out but the loans are still fully backed by collateral, so the money is coming back. It's <em>insolvent</em> when the loans and collateral together are worth less than what suppliers are owed, so some money isn't coming back. High utilization makes a pool illiquid; it doesn't make it insolvent. Section 4 covers insolvency.</p>
       <p>How long does the wait last? There's no fixed period. Cash comes back as borrowers repay, new suppliers deposit, or liquidations happen. The very high rates above optimal utilization are designed to speed that up. A pool can refill in minutes or stay tight for days.</p>
       <p>If you did the Stablecoin Lab, this is the lending version of a redemption freeze: the money is there, but not in a form you can take out today.</p>
     </div>
     <div class="ex"><b class="t">Example</b>Pool: $500,000,000 supplied, $498,500,000 borrowed. Maple has $4,000,000 deposited and wants it all back today.<br>
       Utilization = 498,500,000 ÷ 500,000,000 × 100 = <strong>99.70%</strong>. Available = 500,000,000 − 498,500,000 = <strong>$1,500,000</strong>.<br>
-      Maple can withdraw <strong>$1,500,000</strong> now (assuming it's first in line), and <strong>$2,500,000</strong> has to wait.<br>
-      With the settings from Section 2's example, the supply rate at 99.70% = (0 + 6 + ((99.70 − 90) ÷ 10) × 60) × 0.997 × 0.90 = 64.20 × 0.997 × 0.90 = <strong>57.61%</strong>. While Maple waits, it earns a very high rate, but only on paper until it can withdraw.</div>
+      A request for the full $4,000,000 would fail. If Maple requests <strong>$1,500,000</strong> and no one else takes that cash first, it gets that now, and <strong>$2,500,000</strong> has to wait for a later try.<br>
+      With the settings from Section 2's example, the supply rate at 99.70% = (0 + 6 + ((99.70 − 90) ÷ 10) × 60) × 0.997 × 0.90 = 64.20 × 0.997 × 0.90 = <strong>57.61%</strong>. Interest keeps building on Maple's whole deposit at that rate while it waits. But getting that money out still depends on cash coming back into the pool, and in the end on the loans and their collateral being worth what they're supposed to be (Section 4).</div>
     <div class="real"><strong>Real case: April 2026.</strong> On April 18, 2026, attackers exploited a cross-chain bridge run by Kelp DAO, outside Aave, and took 116,500 rsETH, a token that Aave accepted as collateral. They deposited it on Aave and borrowed about $191 million of WETH (wrapped ETH) against it. As other users rushed to withdraw, Aave's WETH pools on Ethereum and several other networks hit <strong>100% utilization</strong>, with almost no idle cash left, so WETH suppliers couldn't withdraw. Total deposits on Aave fell from about $26.4 billion to about $20 billion in roughly a day. Aave's own smart contracts were not hacked.
       <p class="note" style="margin:6px 0 0">Sources: <a href="https://governance.aave.com/t/rseth-incident-report-april-20-2026/24580" target="_blank" rel="noopener">Aave governance, rsETH Incident Report (Apr. 20, 2026)</a>; <a href="https://www.coindesk.com/tech/2026/04/19/aave-records-usd6-billion-tvl-drop-as-kelp-hack-exposes-structural-risk-at-defi-lender" target="_blank" rel="noopener">CoinDesk (Apr. 19, 2026)</a>.</p></div>
     <div class="locked qlock">Type your name and click Start to see your questions.</div>
@@ -517,11 +517,11 @@ add({ id: "3.2", sec: "3", kind: "num", label: "Available liquidity", unit: "$",
   ans: p => p.avail, tol: () => 1,
   hint: "Supplied minus borrowed." });
 add({ id: "3.3", sec: "3", kind: "num", label: "Maple can withdraw now", unit: "$", dec: 0,
-  prompt: () => `Assuming Maple is first in line, how much can it withdraw right now?`,
+  prompt: () => `A request for the full amount would fail. If Maple requests only what's available and no other supplier takes that cash first, how much can it withdraw right now?`,
   ans: p => Math.min(p.D, p.avail), tol: () => 1,
-  hint: "Maple can't take out more than the cash available, or more than it deposited." });
+  hint: "Maple can't take out more than the cash sitting in the pool, or more than it deposited." });
 add({ id: "3.4", sec: "3", kind: "num", label: "Has to wait", unit: "$", dec: 0,
-  prompt: () => `How much of Maple's deposit has to wait?`,
+  prompt: () => `How much of Maple's deposit has to wait for a later withdrawal?`,
   ans: p => Math.max(0, p.D - p.avail), tol: () => 1,
   hint: "Maple's deposit minus what it can withdraw now." });
 add({ id: "3.5", sec: "3", kind: "num", label: "Supply rate while waiting (%)", unit: "%", dec: 2,
@@ -530,7 +530,7 @@ add({ id: "3.5", sec: "3", kind: "num", label: "Supply rate while waiting (%)", 
   hint: "Utilization is above optimal, so use the steep formula for the borrow rate first. Then supply rate = borrow rate × utilization as a decimal × (1 − reserve factor)." });
 add({ id: "3.6", sec: "3", kind: "mc", label: "Illiquid or insolvent?",
   prompt: () => "The pool is almost fully lent out and Maple can't withdraw everything, but every loan is still backed by more collateral than it owes. Which describes the pool?",
-  opts: ["Illiquid but not insolvent: the money is coming back as loans are repaid, new deposits arrive or liquidations happen", "Insolvent: suppliers have permanently lost money", "Both illiquid and insolvent", "Neither: suppliers can always withdraw everything at once"], correct: 0,
+  opts: ["Illiquid but not insolvent: the cash should come back as loans are repaid, new deposits arrive or liquidations happen", "Insolvent: suppliers have permanently lost money", "Both illiquid and insolvent", "Neither: suppliers can always withdraw everything at once"], correct: 0,
   hint: "Re-read the third paragraph of the blue box." });
 add({ id: "3.7", sec: "3", kind: "mc", label: "Avoiding getting stuck",
   prompt: () => "What's the simplest way for Maple to avoid being caught short when a pool is fully borrowed?",
