@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeFi Lending Lab</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1c1c1a; --muted: #67655f; --line: #d9d6cd;
+    --input: #fff7c2; --input-ink: #1a3fbf; --head: #e6ebf5; --soft: #e3f0dc; --tech: #efe8f7;
+    --good: #2b7a2f; --bad: #c0312b; --warn-bg: #fdecea; --accent: #b4500a; --code: #f1efe8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151513; --panel: #1f1f1c; --ink: #ecebe6; --muted: #a09d94; --line: #3a3933;
+      --input: #3b3518; --input-ink: #9db6ff; --head: #262c38; --soft: #22301d; --tech: #2c2438;
+      --good: #6cc070; --bad: #f06a62; --warn-bg: #3a1c1a; --accent: #f3a065; --code: #262622;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+  h2 { font-size: 1.25rem; margin: 0 0 6px; }
+  h3 { font-size: 1.05rem; margin: 22px 0 6px; }
+  h4 { font-size: .98rem; margin: 14px 0 4px; }
+  p { margin: 8px 0; }
+  a { color: var(--input-ink); }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+  .step { display: inline-block; background: var(--accent); color: #fff; border-radius: 999px; padding: 1px 10px; font-size: .8rem; font-weight: 700; margin-right: 6px; vertical-align: 2px; }
+  .muted { color: var(--muted); } .small { font-size: .9rem; } .note { font-size: .85rem; color: var(--muted); }
+  .ok { color: var(--good); font-weight: 700; } .bad { color: var(--bad); font-weight: 700; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .why { background: var(--head); border-radius: 8px; padding: 10px 12px; margin: 8px 0 12px; font-size: .93rem; }
+  .tech { background: var(--tech); border-radius: 8px; padding: 10px 12px; margin: 8px 0 12px; font-size: .93rem; }
+  .why p, .tech p { margin: 6px 0; } .why ul, .tech ul { margin: 4px 0 4px 18px; padding: 0; }
+  .ex { border-left: 4px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 8px 0 12px; font-size: .9rem; }
+  .ex b.t { display: block; margin-bottom: 2px; }
+  .scen { background: var(--soft); border-radius: 8px; padding: 10px 12px; margin: 8px 0 10px; }
+  .q { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  .q .qn { font-weight: 700; color: var(--accent); margin-right: 4px; }
+  .q .prompt { margin: 0 0 8px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  input.num { font: 700 1rem ui-monospace, Menlo, monospace; width: 170px; padding: 7px 10px; border: 2px solid var(--input-ink); border-radius: 8px; background: var(--input); color: var(--input-ink); }
+  input.num:disabled, select:disabled, textarea:disabled { opacity: .5; }
+  .unit { font-weight: 700; color: var(--muted); }
+  .res { font-size: .9rem; }
+  .hint { display: none; margin-top: 6px; font-size: .88rem; background: var(--warn-bg); border-radius: 8px; padding: 6px 10px; }
+  .hint.show { display: block; }
+  .real { background: var(--soft); border-radius: 8px; padding: 10px 12px; margin: 8px 0 12px; font-size: .93rem; }
+  .opts label { display: flex; gap: 8px; align-items: flex-start; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+  .opts label:hover { background: var(--bg); }
+  .opts input { margin-top: 5px; }
+  textarea { width: 100%; min-height: 130px; font: inherit; padding: 8px 10px; border: 2px solid var(--input-ink); border-radius: 8px; background: var(--input); color: var(--ink); resize: vertical; }
+  select { font: inherit; padding: 6px 8px; border: 2px solid var(--input-ink); border-radius: 8px; background: var(--input); color: var(--ink); max-width: 100%; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.t { border-collapse: collapse; margin: 8px 0; font-size: .9rem; }
+  table.t th, table.t td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; }
+  table.t th { background: var(--head); }
+  table.t td.r { text-align: right; font-family: ui-monospace, Menlo, monospace; }
+  pre.code { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 10px 0; font: .82rem/1.55 ui-monospace, Menlo, monospace; overflow-x: auto; margin: 8px 0; }
+  pre.code .ln { display: inline-block; width: 3.2em; text-align: right; padding-right: .9em; color: var(--muted); user-select: none; }
+  pre.code .cm { color: var(--good); }
+  .types { display: grid; gap: 12px; }
+  .type { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .type h3 { margin: 0 0 4px; }
+  .type dl { margin: 6px 0 0; display: grid; grid-template-columns: 9.5em 1fr; gap: 6px 12px; font-size: .92rem; }
+  .type dt { font-weight: 700; color: var(--muted); }
+  .type dd { margin: 0; }
+  @media (max-width: 620px) { .type dl { grid-template-columns: 1fr; gap: 2px; } .type dd { margin-bottom: 6px; } }
+  .explorer { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 8px 0; font-size: .88rem; }
+  .explorer .bar { background: var(--head); padding: 6px 12px; font-weight: 700; }
+  .explorer table { border-collapse: collapse; width: 100%; }
+  .explorer td { padding: 5px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+  .explorer td:first-child { color: var(--muted); width: 11em; }
+  .explorer td.h { word-break: break-all; font-family: ui-monospace, Menlo, monospace; }
+  .badge { display: inline-block; background: var(--soft); color: var(--good); border-radius: 999px; padding: 0 9px; font-weight: 700; }
+  .titlepage { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px 18px 18px; margin-bottom: 18px; text-align: center; }
+  .tp-title { font-weight: 800; font-size: 1.45rem; margin: 0 0 16px; }
+  .tp-fields { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  input.tp { width: min(520px, 100%); text-align: center; font: inherit; border: 0; border-bottom: 1px dashed var(--line); background: transparent; color: var(--ink); padding: 4px 6px; }
+  input.tp:focus { outline: none; border-bottom-color: var(--accent); }
+  input.tp[readonly] { border-bottom-color: transparent; }
+  input.tp#name { background: var(--input); border-radius: 6px; font-weight: 700; }
+  .locked { border: 2px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; color: var(--muted); }
+  .progress { font-size: .9rem; }
+  .progress td { padding: 3px 10px 3px 0; }
+  .savebar { border-top: 1px dashed var(--line); margin-top: 18px; padding-top: 12px; }
+  .warn { background: var(--warn-bg); border: 2px solid var(--bad); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; }
+  .hidden { display: none !important; }
+  nav.toc { font-size: .92rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  nav.toc a { white-space: nowrap; }
+  footer p { margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <header class="titlepage" aria-label="Title page">
+    <p class="tp-title" id="tpTitle"></p>
+    <div class="tp-fields">
+      <input class="tp" id="name" autocomplete="name" placeholder="Your first and last name" aria-label="Your name">
+      <input class="tp" id="dept" autocomplete="off" placeholder="Department" aria-label="Department">
+      <input class="tp" id="univ" autocomplete="off" placeholder="University" aria-label="University">
+      <input class="tp" id="course" autocomplete="off" placeholder="Course number: Course name" aria-label="Course">
+      <input class="tp" id="instructor" autocomplete="off" placeholder="Instructor" aria-label="Instructor">
+      <input class="tp" id="duedate" autocomplete="off" placeholder="Date" aria-label="Date">
+    </div>
+    <p class="note" style="text-align:center;margin:10px 0 0">Type your name on the first line. The title block follows APA 7th edition and goes on the first page of the file you hand in.</p>
+  </header>
+
+  <p class="sub">You are on the finance team at <strong>Maple Supply Co.</strong>, a U.S. manufacturer. Maple keeps millions of dollars of cash sitting idle between payment cycles, and some of it is already held as USDC. Your CFO has heard that DeFi lending pools pay interest on USDC and wants to know: how do they work, what would Maple really earn, could Maple get its money back when it needs it, what happens if borrowers default, and what controls Maple would need. This lab walks you through each question, one section at a time.</p>
+
+  <section>
+    <h2>How this lab works</h2>
+    <ol class="small" style="margin:4px 0 8px 20px;padding:0">
+      <li><strong>Type your full name</strong> in the yellow box at the top and click <strong>Start</strong>. Your name creates <em>your own numbers</em>, so your answers won't match a classmate's. Use the same spelling every time. Your name locks once you start.</li>
+      <li><strong>Do the sections in any order.</strong> Each one stands on its own. Read the boxes first:
+        <ul style="margin:4px 0 4px 18px;padding:0">
+          <li><span style="background:var(--head);padding:0 6px;border-radius:4px">Blue boxes</span> explain the business and finance side.</li>
+          <li><span style="background:var(--tech);padding:0 6px;border-radius:4px">Purple "Under the hood" boxes</span> explain the technology and why it matters to the business.</li>
+          <li><span style="border-left:4px solid var(--accent);padding:0 6px">Orange "Example" boxes</span> show you how to do each calculation with sample numbers. Then you do it with yours.</li>
+          <li><span style="background:var(--soft);padding:0 6px;border-radius:4px">Green "Real case" boxes</span> show what actually happened in real lending pools.</li>
+        </ul>
+      </li>
+      <li><strong>The page checks your answers as you go.</strong> Press Tab or click outside the box to check. If you get one wrong, a hint appears. Keep trying until it's marked right; there's no limit on tries.</li>
+      <li><strong>Written questions</strong> have no single right answer. Your instructor grades your reasoning, not which side you pick.</li>
+      <li><strong>Save your work by downloading it.</strong> Click <strong>Download my work</strong> any time. To pick up later, open this page and click <strong>Load my saved work</strong>, then choose that file. Nothing is saved in the browser, so if you close the tab without downloading, your work is gone.</li>
+      <li><strong>Hand in</strong> the downloaded Excel file. Don't edit it in Excel, because the page reads it back exactly as it was downloaded.</li>
+    </ol>
+    <div class="row">
+      <button class="primary" id="startBtn">Start</button>
+      <button id="changeName" class="hidden">Change name</button>
+      <button id="loadBtn">Load my saved work</button>
+      <input type="file" id="loadFile" accept=".xlsx" class="hidden">
+      <button id="dlTop" disabled>Download my work</button>
+    </div>
+    <div id="startStatus" class="small"></div>
+    <div id="progress" class="progress hidden" style="margin-top:10px"></div>
+    <nav class="toc small" style="margin-top:8px">Jump to:
+      <a href="#s1">1. How a lending pool works</a><a href="#s2">2. The yield math</a><a href="#s3">3. Getting your money out</a><a href="#s4">4. When borrowers default</a><a href="#s5">5. Audits and controls</a><a href="#s6">6. Your call</a>
+    </nav>
+  </section>
+
+  <!-- ===================================================== SECTION 1 ===================================================== -->
+  <section id="s1">
+    <h2><span class="step">Section 1</span>How a lending pool works</h2>
+    <p class="small"><strong>Goal:</strong> explain how suppliers, borrowers, collateral and the pool fit together, and what Maple actually holds after it deposits.</p>
+    <div class="why">
+      <p><strong>The idea:</strong> a DeFi lending pool is a pile of money that anyone can add to or borrow from, run by software instead of a bank. Aave is the largest; MakerDAO's Sky and Compound are others. This lab uses a simplified "Aave-style" pool.</p>
+      <ul>
+        <li><strong>Suppliers</strong> (lenders) deposit coins, like USDC, into the pool. That's what Maple would be.</li>
+        <li><strong>Borrowers</strong> take coins out of the pool. There's no credit check. Instead, every borrower must first lock up <strong>collateral</strong> worth <em>more</em> than they borrow, for example $150 of ETH to borrow $100 of USDC.</li>
+        <li>Borrowers pay <strong>interest</strong>. Most of it goes to suppliers. A slice called the <strong>reserve factor</strong> goes to the protocol's treasury.</li>
+        <li>If a borrower's collateral falls in value too far, the pool sells it to repay the loan. This is a <strong>liquidation</strong>, and it's what protects suppliers.</li>
+        <li>Suppliers can withdraw any time, <em>as long as the pool has cash that isn't lent out</em>. There's no fixed term like a CD. (Section 3 shows why that "as long as" matters.)</li>
+      </ul>
+    </div>
+    <div class="tech">
+      <p><strong>Under the hood</strong></p>
+      <ul>
+        <li><strong>Smart contracts</strong> hold the pool's money and enforce every rule: who can borrow, how much, at what rate, and when to liquidate.</li>
+        <li><strong>Receipt tokens:</strong> when Maple deposits 1,000,000 USDC, it gets back 1,000,000 <strong>aUSDC</strong>. That's a receipt, a claim on the pool. Its balance slowly grows as interest builds up. To get USDC back, Maple hands the aUSDC back to the pool.</li>
+        <li><strong>Oracles</strong> (price feeds) tell the contracts what each collateral token is worth. Liquidations depend on them.</li>
+        <li><strong>Liquidators</strong> are automated programs, run by anyone, that repay risky loans and receive the borrower's collateral at a discount (the <em>liquidation bonus</em>). That reward is why they show up.</li>
+        <li><strong>Governance:</strong> holders of the AAVE token vote on the settings: which tokens can be collateral, how much can be borrowed against them, the interest rate settings and the reserve factor.</li>
+      </ul>
+      <p><strong>Why it matters to the business:</strong> after depositing, Maple no longer holds USDC. It holds a claim on a pool of loans. That adds a second layer of risk on top of the USDC itself: if USDC lost its $1 peg (the Stablecoin Lab's stress test), the pool wouldn't protect Maple from that. Depositing <em>adds</em> pool risk; it doesn't replace USDC risk.</p>
+    </div>
+    <div class="scroll"><table class="t">
+      <tr><th></th><th>Bank deposit</th><th>DeFi lending pool</th></tr>
+      <tr><td>Who decides who can borrow</td><td>The bank, with credit checks</td><td>The code: anyone with enough collateral</td></tr>
+      <tr><td>What protects the lender</td><td>Bank capital, regulation, FDIC insurance up to its limits</td><td>Over-collateralized loans, liquidations, and any backstop the protocol has. No government insurance</td></tr>
+      <tr><td>Interest rate</td><td>Set by the bank</td><td>Set by a formula based on how much of the pool is borrowed</td></tr>
+      <tr><td>Getting money out</td><td>Normally on demand</td><td>On demand only if the pool has unborrowed cash</td></tr>
+      <tr><td>Hours</td><td>Business hours and cutoffs</td><td>24/7</td></tr>
+    </table></div>
+    <h3>Check your understanding</h3>
+    <div class="locked qlock">Type your name and click Start to see your questions.</div>
+    <div class="qs" data-sec="1"></div>
+    <div class="row savebar"><button class="dlBtn" disabled>Download my work</button><button class="ldBtn">Load my saved work</button><span class="note">Save before you stop. To pick up later, load the file you downloaded.</span></div>
+  </section>
+
+  <!-- ===================================================== SECTION 2 ===================================================== -->
+  <section id="s2">
+    <h2><span class="step">Section 2</span>The yield math</h2>
+    <p class="small"><strong>Goal:</strong> calculate utilization, the borrow rate and the supply rate, then estimate Maple's income and compare it with Treasury bills.</p>
+    <div class="why">
+      <p><strong>Utilization</strong> is the share of the pool that's lent out: borrowed ÷ supplied × 100. It drives everything else.</p>
+      <p><strong>The borrow rate</strong> rises with utilization. Aave-style pools use a "kinked" line: below a target called <strong>optimal utilization</strong> the rate rises gently, and above it the rate rises steeply. The steep part is deliberate: when the pool is nearly empty, high rates push borrowers to repay and attract new suppliers, which refills the pool.</p>
+      <p><strong>Below optimal:</strong> borrow rate = base rate + (utilization ÷ optimal) × slope 1<br>
+         <strong>Above optimal:</strong> borrow rate = base rate + slope 1 + ((utilization − optimal) ÷ (100% − optimal)) × slope 2</p>
+      <p><strong>The supply rate</strong> is what suppliers earn: borrow rate × utilization × (1 − reserve factor). It's lower than the borrow rate because only the borrowed part of the pool pays interest, and the protocol keeps its reserve factor.</p>
+      <p><strong>Two cautions:</strong> the settings in this lab (base rate, slopes, optimal utilization, reserve factor) are made up for practice. Real pools set different values for each coin and change them by governance vote. And the supply rate is a <em>variable</em> rate: it changes every time someone deposits, borrows or repays. "Annual income" below is a simple estimate that assumes today's rate stays the same all year, with no compounding. It isn't a promise.</p>
+      <p class="note">Sources: <a href="https://docs.aave.com/risk/liquidity-risk/borrow-interest-rate" target="_blank" rel="noopener">Aave risk documentation, "Borrow Interest Rate"</a>; <a href="https://updraft.cyfrin.io/courses/aave-v3/foundation/interest-rate-model" target="_blank" rel="noopener">Cyfrin Updraft, Aave V3 interest rate model</a>.</p>
+    </div>
+    <div class="ex"><b class="t">Example</b>Pool: $500,000,000 supplied, $350,000,000 borrowed. Settings: base rate 0%, slope 1 = 6%, slope 2 = 60%, optimal utilization 90%, reserve factor 10%. Maple deposits $4,000,000. T-bills pay 4.00%.<br>
+      Utilization = 350,000,000 ÷ 500,000,000 × 100 = <strong>70.00%</strong> (below the 90% optimal).<br>
+      Borrow rate = 0 + (70 ÷ 90) × 6 = <strong>4.67%</strong>.<br>
+      Supply rate = 4.67 × 0.70 × (1 − 0.10) = <strong>2.94%</strong>.<br>
+      Maple's estimated income = 4,000,000 × 0.0294 = <strong>$117,600</strong> a year. T-bills: 4,000,000 × 0.04 = <strong>$160,000</strong>. Extra from the pool = 117,600 − 160,000 = <strong>−$42,400</strong> (the pool pays <em>less</em> here).<br>
+      If utilization jumps to 95% (above optimal): borrow rate = 0 + 6 + ((95 − 90) ÷ (100 − 90)) × 60 = 6 + 30 = <strong>36.00%</strong>. Supply rate = 36.00 × 0.95 × 0.90 = <strong>30.78%</strong>.</div>
+    <div class="tech"><strong>Under the hood:</strong> nobody types in the interest rate. The pool's smart contract recalculates both rates every time someone deposits, borrows, repays or withdraws, using the formula above. That's why the rate on a dashboard can change minute to minute.</div>
+    <div class="locked qlock">Type your name and click Start to see your questions.</div>
+    <div class="qs" data-sec="2"></div>
+    <div class="row savebar"><button class="dlBtn" disabled>Download my work</button><button class="ldBtn">Load my saved work</button><span class="note">Save before you stop. To pick up later, load the file you downloaded.</span></div>
+  </section>
+
+  <!-- ===================================================== SECTION 3 ===================================================== -->
+  <section id="s3">
+    <h2><span class="step">Section 3</span>Getting your money out</h2>
+    <p class="small"><strong>Goal:</strong> calculate how much Maple can withdraw today, and explain the difference between a pool that's illiquid and one that's insolvent.</p>
+    <div class="why">
+      <p><strong>What's happening:</strong> a supplier can only withdraw cash that's actually sitting in the pool. Money that's been lent out isn't there.</p>
+      <p><strong>Available liquidity</strong> = total supplied − total borrowed. If Maple wants more than that, it gets what's available now and waits for the rest.</p>
+      <p><strong>Illiquid is not the same as insolvent.</strong> A pool is <em>illiquid</em> when its cash is lent out but the loans are still fully backed by collateral, so the money is coming back. It's <em>insolvent</em> when the loans and collateral together are worth less than what suppliers are owed, so some money isn't coming back. High utilization makes a pool illiquid; it doesn't make it insolvent. Section 4 covers insolvency.</p>
+      <p>How long does the wait last? There's no fixed period. Cash comes back as borrowers repay, new suppliers deposit, or liquidations happen. The very high rates above optimal utilization are designed to speed that up. A pool can refill in minutes or stay tight for days.</p>
+      <p>If you did the Stablecoin Lab, this is the lending version of a redemption freeze: the money is there, but not in a form you can take out today.</p>
+    </div>
+    <div class="ex"><b class="t">Example</b>Pool: $500,000,000 supplied, $498,500,000 borrowed. Maple has $4,000,000 deposited and wants it all back today.<br>
+      Utilization = 498,500,000 ÷ 500,000,000 × 100 = <strong>99.70%</strong>. Available = 500,000,000 − 498,500,000 = <strong>$1,500,000</strong>.<br>
+      Maple can withdraw <strong>$1,500,000</strong> now (assuming it's first in line), and <strong>$2,500,000</strong> has to wait.<br>
+      With the settings from Section 2's example, the supply rate at 99.70% = (0 + 6 + ((99.70 − 90) ÷ 10) × 60) × 0.997 × 0.90 = 64.20 × 0.997 × 0.90 = <strong>57.61%</strong>. While Maple waits, it earns a very high rate, but only on paper until it can withdraw.</div>
+    <div class="real"><strong>Real case: April 2026.</strong> On April 18, 2026, attackers exploited a cross-chain bridge run by Kelp DAO, outside Aave, and took 116,500 rsETH, a token that Aave accepted as collateral. They deposited it on Aave and borrowed about $191 million of WETH (wrapped ETH) against it. As other users rushed to withdraw, Aave's WETH pools on Ethereum and several other networks hit <strong>100% utilization</strong>, with almost no idle cash left, so WETH suppliers couldn't withdraw. Total deposits on Aave fell from about $26.4 billion to about $20 billion in roughly a day. Aave's own smart contracts were not hacked.
+      <p class="note" style="margin:6px 0 0">Sources: <a href="https://governance.aave.com/t/rseth-incident-report-april-20-2026/24580" target="_blank" rel="noopener">Aave governance, rsETH Incident Report (Apr. 20, 2026)</a>; <a href="https://www.coindesk.com/tech/2026/04/19/aave-records-usd6-billion-tvl-drop-as-kelp-hack-exposes-structural-risk-at-defi-lender" target="_blank" rel="noopener">CoinDesk (Apr. 19, 2026)</a>.</p></div>
+    <div class="locked qlock">Type your name and click Start to see your questions.</div>
+    <div class="qs" data-sec="3"></div>
+    <div class="row savebar"><button class="dlBtn" disabled>Download my work</button><button class="ldBtn">Load my saved work</button><span class="note">Save before you stop. To pick up later, load the file you downloaded.</span></div>
+  </section>
+
+  <!-- ===================================================== SECTION 4 ===================================================== -->
+  <section id="s4">
+    <h2><span class="step">Section 4</span>When borrowers default</h2>
+    <p class="small"><strong>Goal:</strong> calculate the bad debt left when a liquidation falls short, and Maple's share of the loss under this lab's assumptions.</p>
+    <div class="why">
+      <p><strong>What's happening:</strong> liquidation only protects suppliers if the collateral can be sold for at least what the borrower owes. If the collateral's value collapses faster than liquidators can act, or the collateral turns out to be worth much less than the pool thought, the sale falls short. The gap is <strong>bad debt</strong>: money lent out that isn't coming back.</p>
+      <p><strong>Bad debt</strong> = amount the borrower owes − what the collateral sold for.</p>
+      <p><strong>Who absorbs the loss?</strong> It depends on the protocol, its version, the coin, and decisions made at the time. There's no universal rule. Aave launched a backstop called <strong>Umbrella</strong> in June 2025: users can "stake" deposits in a coin's Umbrella vault to earn extra rewards, and if that coin's pool takes bad debt, the staked deposits can be used up to cover it, automatically. Before that, Aave's DAO (its token holders, through votes) sometimes paid for bad debt from its own treasury.</p>
+      <p><strong>This lab's loss order is a simplified assumption, loosely modeled on Umbrella, not an exact description of Aave today:</strong></p>
+      <ol style="margin:4px 0 4px 20px;padding:0">
+        <li>The protocol's treasury covers the first <strong>$100,000</strong>.</li>
+        <li>The stakers' backstop vault covers the next part, up to the vault's size.</li>
+        <li>Anything left is shared by all suppliers in proportion to their deposits. Maple's share = loss left × (Maple's deposit ÷ total supplied).</li>
+      </ol>
+    </div>
+    <div class="ex"><b class="t">Example</b>A borrower owes $40,000,000. Their collateral sells for only $30,000,000. Bad debt = 40,000,000 − 30,000,000 = <strong>$10,000,000</strong>.<br>
+      Treasury covers $100,000. The backstop vault holds $4,000,000. Left for suppliers = 10,000,000 − 100,000 − 4,000,000 = <strong>$5,900,000</strong>.<br>
+      Maple has $4,000,000 in a $500,000,000 pool: share = 5,900,000 × (4,000,000 ÷ 500,000,000) = <strong>$47,200</strong>.<br>
+      If Maple's pool income is $117,600 a year, it takes 47,200 ÷ 117,600 = <strong>0.40</strong> years of income to earn that loss back.</div>
+    <div class="tech"><strong>Under the hood: oracles work both ways.</strong> If a price feed reports collateral as worth <em>less</em> than it really is, healthy loans get liquidated, which hurts borrowers. If it reports collateral as worth <em>more</em> than it really is, risky loans <em>aren't</em> liquidated in time, the gap keeps growing, and suppliers end up holding the bad debt. For a supplier like Maple, the second failure is the dangerous one. The same thing happens if the pool accepts a collateral token that later turns out to be poorly backed, as in the case below.</div>
+    <div class="real"><strong>Real cases.</strong> In November 2022, a large trade designed to move the price of the CRV token left Aave with about <strong>$1.6 million</strong> of bad debt, and risk managers proposed covering it from Aave's treasury. In April 2026, the rsETH collateral in Section 3's case lost much of its backing after the bridge hack. An incident report on Aave's governance forum modeled possible bad debt of roughly <strong>$124 million to $230 million</strong>, depending on how losses on the rsETH side would be shared. In May 2026, about $71 million in ETH was recovered, the attacker's positions were liquidated, and Aave and partners set up a compensation pool. How the final losses were split was still being settled in the reports we found.
+      <p class="note" style="margin:6px 0 0">Sources: <a href="https://www.theblock.co/post/189606/llama-and-gauntlet-submit-proposal-to-cover-1-6-million-in-bad-debt-on-aave" target="_blank" rel="noopener">The Block (Nov. 2022)</a>; <a href="https://governance.aave.com/t/rseth-incident-report-april-20-2026/24580" target="_blank" rel="noopener">Aave rsETH Incident Report</a>; <a href="https://www.cryptoninjas.net/news/aave-unveils-71m-rseth-recovery-push-as-dao-votes-and-court-orders-align/" target="_blank" rel="noopener">CryptoNinjas (May 9, 2026)</a>; <a href="https://aave.com/docs/aave-v3/umbrella" target="_blank" rel="noopener">Aave Umbrella documentation</a>.</p></div>
+    <div class="locked qlock">Type your name and click Start to see your questions.</div>
+    <div class="qs" data-sec="4"></div>
+    <div class="row savebar"><button class="dlBtn" disabled>Download my work</button><button class="ldBtn">Load my saved work</button><span class="note">Save before you stop. To pick up later, load the file you downloaded.</span></div>
+  </section>
+
+  <!-- ===================================================== SECTION 5 ===================================================== -->
+  <section id="s5">
+    <h2><span class="step">Section 5</span>Audits and controls</h2>
+    <p class="small"><strong>Goal:</strong> explain what a smart-contract audit does and doesn't cover, and choose the treasury controls Maple would need before depositing.</p>
+    <div class="why">
+      <p><strong>What an audit is:</strong> a security firm reads a protocol's smart-contract code, at one specific version, looking for bugs. It ranks each finding by severity (critical, high, medium, low) and notes whether the team fixed it or <em>acknowledged</em> it (accepted the risk without fixing it).</p>
+      <p><strong>What an audit isn't:</strong> it's not a guarantee that the protocol is financially safe. It usually doesn't cover the economic design, the price feeds, the collateral tokens the pool accepts, governance decisions, code changed after the audit, or how Maple itself stores its keys. A code audit is software assurance, not risk management.</p>
+    </div>
+    <div class="real"><strong>Real case: March 2023.</strong> Euler Finance, a lending protocol, had 10 audits from 6 firms between 2021 and 2022, none rating anything above low risk. On March 13, 2023, an attacker took about <strong>$196 million</strong> through a flaw in its code. And in the April 2026 Aave case, Aave's code worked as designed: the problem came from a bridge and a collateral token outside Aave's code.
+      <p class="note" style="margin:6px 0 0">Source: <a href="https://regional-front.cointelegraph.com/news/euler-finance-hacked-despite-10-audits-in-2-years-says-ceo" target="_blank" rel="noopener">Cointelegraph, "Euler Finance hacked despite 10 audits in 2 years"</a>.</p></div>
+    <h3>5A. Read an audit summary</h3>
+    <p class="small">The summary below is <strong>made up for this lab</strong>, but it's laid out like real audit reports.</p>
+    <div class="locked qlock">Type your name and click Start to see your questions.</div>
+    <div class="qs" data-sec="5a"></div>
+    <h3>5B. Treasury controls</h3>
+    <div class="why"><strong>What's happening:</strong> before a company puts cash into anything new, its <strong>investment policy</strong> sets limits: how much in total, how much with any one counterparty, who approves it, and when to pull out. For DeFi, companies add controls for the technology too: which protocols are approved, how the keys are held, and what gets monitored.</div>
+    <div class="ex"><b class="t">Example</b>Maple has $80,000,000 in cash. Its policy caps any single DeFi protocol at 5% of cash. The most it can deposit = 80,000,000 × 0.05 = <strong>$4,000,000</strong>.</div>
+    <div class="qs" data-sec="5b"></div>
+    <div class="row savebar"><button class="dlBtn" disabled>Download my work</button><button class="ldBtn">Load my saved work</button><span class="note">Save before you stop. To pick up later, load the file you downloaded.</span></div>
+  </section>
+
+  <!-- ===================================================== SECTION 6 ===================================================== -->
+  <section id="s6">
+    <h2><span class="step">Section 6</span>Your call</h2>
+    <p class="small"><strong>Goal:</strong> recommend whether Maple should put part of its cash in the pool, how much, and under what conditions, using your own numbers.</p>
+    <div class="why">This is the decision your capstone may come back to. Use what you worked out in this lab: your yield compared with T-bills, how much you could withdraw in a crunch, and your share of a possible loss. There's no right side. Your instructor grades how well you support your answer.</div>
+    <div class="locked qlock">Type your name and click Start to see your questions.</div>
+    <div class="qs" data-sec="6"></div>
+  </section>
+  <section>
+    <h2><span class="step">Hand in</span>Download your work</h2>
+    <p class="small">Download your work as an Excel file. It opens in Excel or Numbers. It lists every answer, whether it was right, your wrong tries and your written answers. Upload this file to Blackboard as your lab submission. Don't edit and re-save it: your instructor loads it back into this page to check it.</p>
+    <div class="row"><button class="primary" id="download" disabled>Download my work (Excel)</button><button class="ldBtn">Load my saved work</button><span class="note" id="dlNote"></span></div>
+    <div id="finalProgress" class="progress"></div>
+  </section>
+
+  <section id="instr" class="hidden">
+    <h2>Instructor tools</h2>
+    <p class="small">Enter the instructor passcode. Then type a student's name at the top and click Start to see that student's answer key. To check a submission, click <strong>Load my saved work</strong> and choose the student's file: the page re-checks every answer from the student's name, ignoring anything typed into the Excel file afterward.</p>
+    <div class="row"><input class="num" id="keyPass" type="password" style="width:240px" aria-label="Instructor passcode"><button id="keyBtn">Show answer key</button><span id="keyStatus" class="small"></span></div>
+    <div id="keyOut" class="scroll"></div>
+  </section>
+
+  <footer class="note">
+    <p>All the math happens inside this page, in your browser. The page sends nothing over the internet, and once loaded it works offline. Your name and answers stay on your computer unless you download the Excel file and hand it in.</p>
+    <p>The company, pool settings, audit summary and numbers in this lab are made up for practice. The protocols and events described in the "Real case" boxes are real; check the linked sources for the latest.</p>
+    <p><strong>Free and open-source software</strong>, MIT License.</p>
+  </footer>
+</main>
+
+<script>
+"use strict";
+/* ============ COURSE SETTINGS: fill these in once; every student sees them. Leave "" to let students type it. ============ */
+const COURSE = {
+  title:      "DeFi Lending Lab: Should Maple Lend Its Cash?",
+  department: "Hutton & Plaster School of Business",
+  university: "University of the Cumberlands",
+  course:     "BLCN 533: Finance and Blockchain",
+  instructor: "Dr. Michael Tabone",
+  // SHA-256 of the instructor passcode. The tools appear when the page address ends in ?instructor
+  instructorKeyHash: "d8b8cade113529a44f9af595e86394603d9cf392ffeb2f3fb8915d6e0581e31b",
+};
+/* ==================================================================================================================== */
+const $ = id => document.getElementById(id);
+const DATA_TAG = "DEFI_LENDING_LAB_DATA_V1";
+
+/* ---------------- SHA-256 (FIPS 180-4), plain JavaScript so it works offline ---------------- */
+const K256 = new Uint32Array([
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+function sha256(msg) {
+  const len = msg.length, total = Math.ceil((len + 9) / 64) * 64;
+  const buf = new Uint8Array(total); buf.set(msg); buf[len] = 0x80;
+  const bitLen = len * 8, dv = new DataView(buf.buffer);
+  dv.setUint32(total - 8, Math.floor(bitLen / 4294967296)); dv.setUint32(total - 4, bitLen >>> 0);
+  const H = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+  const W = new Uint32Array(64);
+  const r = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let off = 0; off < total; off += 64) {
+    for (let t = 0; t < 16; t++) W[t] = dv.getUint32(off + t * 4);
+    for (let t = 16; t < 64; t++) {
+      const s0 = r(W[t-15], 7) ^ r(W[t-15], 18) ^ (W[t-15] >>> 3);
+      const s1 = r(W[t-2], 17) ^ r(W[t-2], 19) ^ (W[t-2] >>> 10);
+      W[t] = (W[t-16] + s0 + W[t-7] + s1) >>> 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let t = 0; t < 64; t++) {
+      const T1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K256[t] + W[t]) >>> 0;
+      const T2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+      h = g; g = f; f = e; e = (d + T1) >>> 0; d = c; c = b; b = a; a = (T1 + T2) >>> 0;
+    }
+    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+  }
+  const out = new Uint8Array(32); const ov = new DataView(out.buffer);
+  for (let i = 0; i < 8; i++) ov.setUint32(i * 4, H[i]);
+  return out;
+}
+const toHex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+const enc = new TextEncoder();
+const hashHex = s => toHex(sha256(enc.encode(s)));
+
+/* ---------------- each student's numbers come from their name ---------------- */
+const normName = s => s.normalize("NFKC").trim().toLowerCase().replace(/\s+/g, " ");
+let SEED = "";
+function rand(label) {                         // 0 <= x < 1, the same every time for the same name and label
+  const h = sha256(enc.encode(SEED + "|" + label));
+  return (((h[0] << 24) | (h[1] << 16) | (h[2] << 8) | h[3]) >>> 0) / 4294967296;
+}
+function between(label, min, max, step = 1) {   // a number from min to max in steps, rounded cleanly
+  const n = Math.round((max - min) / step) + 1;
+  const v = min + Math.floor(rand(label) * n) * step;
+  return Math.round(v * 1e6) / 1e6;
+}
+const pick = (label, arr) => arr[Math.floor(rand(label) * arr.length)];
+function shuffle(label, n) {                   // a seeded order of 0..n-1
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand(label + "#" + i) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const r2 = x => Math.round(x * 100) / 100;
+const fmt = (x, dec = 0) => Number(x).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+const money = (x, dec = 0) => (x < 0 ? "−" : "") + "$" + fmt(Math.abs(x), dec);
+function base58(hex) {
+  const A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  let n = BigInt("0x" + hex), s = "";
+  while (n > 0n) { s = A[Number(n % 58n)] + s; n /= 58n; }
+  return s;
+}
+const hexFrom = (label, len) => { let s = ""; let i = 0; while (s.length < len) s += hashHex(SEED + "|" + label + "|" + i++); return s.slice(0, len); };
+
+let P = null;   // the student's numbers
+function makeParams() {
+  const p = {};
+  // the pool and its settings (made up for practice)
+  p.T = between("pool.t", 300, 900, 10) * 1e6;           // total supplied
+  p.Uopt = pick("pool.uopt", [80, 85, 90]);              // optimal utilization, %
+  p.R0 = pick("pool.r0", [0, 0.25, 0.5]);                // base rate, %
+  p.s1 = between("pool.s1", 5, 8.5, 0.5);                // slope 1, %
+  p.s2 = between("pool.s2", 40, 80, 5);                  // slope 2, %
+  p.f = pick("pool.f", [10, 15]);                        // reserve factor, %
+  p.D = between("maple.d", 2, 10, 1) * 1e6;              // Maple's deposit
+  // Section 2
+  p.U1 = between("s2.u1", 68, p.Uopt - 3, 1);
+  p.B1 = p.T * p.U1 / 100;
+  p.tb = between("s2.tb", 3.40, 4.40, 0.05);
+  p.U2 = between("s2.u2", p.Uopt + 2, 98, 1);
+  // Section 3
+  p.avail = Math.round(p.D * between("s3.av", 0.15, 0.60, 0.01) / 10000) * 10000;
+  p.B3 = p.T - p.avail;
+  p.U3r = r2(p.B3 / p.T * 100);
+  // Section 4
+  p.L = between("s4.l", 20, 80, 1) * 1e6;
+  p.C1 = Math.round(p.L * between("s4.rec", 0.55, 0.85, 0.01) / 10000) * 10000;
+  p.bad = p.L - p.C1;
+  p.F1 = 100000;
+  p.Sv = Math.round(p.bad * between("s4.sv", 0.20, 0.60, 0.01) / 10000) * 10000;
+  p.supLoss = p.bad - p.F1 - p.Sv;
+  p.share = p.supLoss * p.D / p.T;
+  // Section 5
+  p.hi = between("s5.h", 1, 2, 1);
+  p.me = between("s5.m", 2, 5, 1);
+  p.meA = between("s5.ma", 1, 2, 1);
+  p.lo = between("s5.l", 3, 8, 1);
+  p.loA = between("s5.la", 1, 3, 1);
+  p.commit = hexFrom("s5.commit", 7);
+  p.cash = between("s5.cash", 40, 150, 5) * 1e6;
+  p.cap = between("s5.cap", 2, 8, 1);
+  p.code = hashHex(SEED).slice(0, 8).toUpperCase();
+  return p;
+}
+// rates, worked from the settings
+const rb = (p, U) => U <= p.Uopt ? p.R0 + U / p.Uopt * p.s1 : p.R0 + p.s1 + (U - p.Uopt) / (100 - p.Uopt) * p.s2;
+const rs = (p, U) => rb(p, U) * U / 100 * (1 - p.f / 100);
+const income = p => p.D * rs(p, p.U1) / 100;
+// what a student gets when rounding each step to 2 decimals, as the page tells them to
+const rbC = (p, U) => r2(rb(p, U));
+const rsC = (p, U) => r2(rbC(p, U) * U / 100 * (1 - p.f / 100));
+const incomeC = p => Math.round(p.D * rsC(p, p.U1) / 100);
+const settings = p => `Pool settings: base rate <strong>${fmt(p.R0, 2)}%</strong>, slope 1 = <strong>${fmt(p.s1, 1)}%</strong>, slope 2 = <strong>${fmt(p.s2)}%</strong>, optimal utilization <strong>${p.Uopt}%</strong>, reserve factor <strong>${p.f}%</strong>.`;
+
+/* ---------------- the questions ---------------- */
+const SECNAMES = { 1: "1. How a lending pool works", 2: "2. The yield math", 3: "3. Getting your money out", 4: "4. When borrowers default", 5: "5. Audits and controls", 6: "6. Your call" };
+
+// kinds: num (number, checked), mc (multiple choice, checked), sel (choice + reasoning, not checked), text (written, not checked)
+const Q = [];
+const add = (q) => Q.push(q);
+
+/* Section 1 */
+add({ id: "1.1", sec: "1", kind: "mc", label: "What Maple holds after depositing",
+  prompt: () => "Maple deposits 2,000,000 USDC in the pool. What does Maple hold now?",
+  opts: ["aUSDC, a receipt token that is a claim on the pool and grows as interest builds up", "The same USDC, still in Maple's wallet, plus monthly interest checks", "A signed loan agreement with each borrower", "AAVE governance tokens"], correct: 0,
+  hint: "Re-read \"Receipt tokens\" in the purple box." });
+add({ id: "1.2", sec: "1", kind: "mc", label: "Why no credit check is needed",
+  prompt: () => "Why can the pool lend to strangers without a credit check?",
+  opts: ["Every loan must be backed by collateral worth more than the loan, and the collateral is sold if the loan gets too risky", "The protocol checks credit scores stored on the blockchain", "Only verified banks are allowed to borrow", "Every loan is insured by the FDIC"], correct: 0,
+  hint: "What do borrowers have to lock up before they can borrow?" });
+add({ id: "1.3", sec: "1", kind: "mc", label: "Where borrowers' interest goes",
+  prompt: () => "Where does the interest that borrowers pay go?",
+  opts: ["Mostly to suppliers; a slice called the reserve factor goes to the protocol's treasury", "All of it to the protocol's founders", "All of it to the liquidators", "It's destroyed to keep the coin's price stable"], correct: 0,
+  hint: "Re-read the third bullet in the blue box." });
+add({ id: "1.4", sec: "1", kind: "mc", label: "Does depositing remove USDC risk?",
+  prompt: () => "Does depositing USDC in the pool protect Maple from a USDC depeg?",
+  opts: ["No. Maple still has USDC's own risks and adds the pool's risks on top", "Yes. The pool guarantees every aUSDC is worth $1", "Yes. aUSDC is insured by the FDIC", "Yes. The pool swaps USDC into dollars automatically"], correct: 0,
+  hint: "Re-read the last paragraph of the purple box." });
+add({ id: "1.5", sec: "1", kind: "mc", label: "Who sets the interest rate",
+  prompt: () => "Who or what sets the pool's interest rates?",
+  opts: ["A formula based on how much of the pool is borrowed, using settings that governance token holders vote on", "The Federal Reserve", "Each supplier picks their own rate", "The protocol's CEO each morning"], correct: 0,
+  hint: "Look at the \"Interest rate\" row in the table, and at \"Governance\" in the purple box." });
+
+/* Section 2 */
+add({ id: "2.1", sec: "2", kind: "num", label: "Utilization (%)", unit: "%", dec: 2,
+  prompt: p => `The USDC pool has <strong>${money(p.T)}</strong> supplied and <strong>${money(p.B1)}</strong> borrowed. What's the utilization? Give a percent to 2 decimal places.`,
+  ans: p => p.B1 / p.T * 100, tol: () => 0.006,
+  hint: "Borrowed ÷ supplied × 100." });
+add({ id: "2.2", sec: "2", kind: "num", label: "Borrow rate (%)", unit: "%", dec: 2,
+  prompt: p => `${settings(p)} Your utilization is below optimal. What's the borrow rate? Give a percent to 2 decimal places.`,
+  ans: p => rb(p, p.U1), tol: () => 0.006,
+  hint: "Below optimal: base rate + (utilization ÷ optimal) × slope 1. Use the percent numbers as they are, for example (70 ÷ 90) × 6." });
+add({ id: "2.3", sec: "2", kind: "num", label: "Supply rate (%)", unit: "%", dec: 2,
+  prompt: () => `What's the supply rate, the rate suppliers like Maple earn? Give a percent to 2 decimal places.`,
+  ans: p => rs(p, p.U1), alt: p => [rsC(p, p.U1)], tol: () => 0.006,
+  hint: "Borrow rate × utilization as a decimal × (1 − reserve factor as a decimal). For example, 4.67 × 0.70 × 0.90." });
+add({ id: "2.4", sec: "2", kind: "num", label: "Maple's estimated annual income", unit: "$", dec: 0,
+  prompt: p => `Maple deposits <strong>${money(p.D)}</strong>. Assuming today's supply rate stays the same all year, what's Maple's estimated income for the year? You can use your supply rate rounded to 2 decimals. Round to the nearest dollar.`,
+  ans: p => income(p), alt: p => [incomeC(p)], tol: p => p.D * 0.00006 + 1,
+  hint: "Deposit × supply rate as a decimal (2.94% = 0.0294)." });
+add({ id: "2.5", sec: "2", kind: "num", label: "Same money in T-bills", unit: "$", dec: 0,
+  prompt: p => `T-bills pay <strong>${fmt(p.tb, 2)}%</strong>. How much would the same ${money(p.D)} earn in T-bills in a year? Round to the nearest dollar.`,
+  ans: p => p.D * p.tb / 100, tol: () => 1,
+  hint: "Deposit × T-bill rate as a decimal." });
+add({ id: "2.6", sec: "2", kind: "num", label: "Extra from pool vs. T-bills", unit: "$", dec: 0,
+  prompt: () => `How much more does the pool pay than T-bills? If the pool pays less, type a negative number with a minus sign. Round to the nearest dollar.`,
+  ans: p => income(p) - p.D * p.tb / 100, alt: p => [incomeC(p) - Math.round(p.D * p.tb / 100)], tol: p => p.D * 0.00006 + 2,
+  hint: "Pool income minus T-bill income." });
+add({ id: "2.7", sec: "2", kind: "num", label: "Borrow rate above optimal (%)", unit: "%", dec: 2,
+  prompt: p => `Demand for loans jumps and utilization rises to <strong>${p.U2}%</strong>, above the ${p.Uopt}% optimal. What's the new borrow rate? Give a percent to 2 decimal places.`,
+  ans: p => rb(p, p.U2), tol: () => 0.006,
+  hint: "Above optimal: base rate + slope 1 + ((utilization − optimal) ÷ (100 − optimal)) × slope 2." });
+add({ id: "2.8", sec: "2", kind: "num", label: "Supply rate above optimal (%)", unit: "%", dec: 2,
+  prompt: () => `What's the new supply rate? Give a percent to 2 decimal places.`,
+  ans: p => rs(p, p.U2), alt: p => [rsC(p, p.U2)], tol: () => 0.006,
+  hint: "Same supply-rate formula, with the new borrow rate and the new utilization." });
+add({ id: "2.9", sec: "2", kind: "mc", label: "Why the rate jumps above optimal",
+  prompt: () => "Why is the borrow rate designed to jump so steeply above optimal utilization?",
+  opts: ["To push borrowers to repay and attract new deposits, so the pool doesn't run out of cash", "To punish suppliers for depositing too much", "Because U.S. law requires it", "To pay the protocol's founders more"], correct: 0,
+  hint: "Re-read the second paragraph of the blue box." });
+
+/* Section 3 */
+add({ id: "3.1", sec: "3", kind: "num", label: "Utilization in the crunch (%)", unit: "%", dec: 2,
+  prompt: p => `A rush of withdrawals hits. The pool now has <strong>${money(p.T)}</strong> supplied and <strong>${money(p.B3)}</strong> borrowed. Maple has <strong>${money(p.D)}</strong> deposited and needs all of it back today. What's the utilization? Give a percent to 2 decimal places.`,
+  ans: p => p.B3 / p.T * 100, tol: () => 0.006,
+  hint: "Borrowed ÷ supplied × 100." });
+add({ id: "3.2", sec: "3", kind: "num", label: "Available liquidity", unit: "$", dec: 0,
+  prompt: () => `How much cash is available in the pool right now?`,
+  ans: p => p.avail, tol: () => 1,
+  hint: "Supplied minus borrowed." });
+add({ id: "3.3", sec: "3", kind: "num", label: "Maple can withdraw now", unit: "$", dec: 0,
+  prompt: () => `Assuming Maple is first in line, how much can it withdraw right now?`,
+  ans: p => Math.min(p.D, p.avail), tol: () => 1,
+  hint: "Maple can't take out more than the cash available, or more than it deposited." });
+add({ id: "3.4", sec: "3", kind: "num", label: "Has to wait", unit: "$", dec: 0,
+  prompt: () => `How much of Maple's deposit has to wait?`,
+  ans: p => Math.max(0, p.D - p.avail), tol: () => 1,
+  hint: "Maple's deposit minus what it can withdraw now." });
+add({ id: "3.5", sec: "3", kind: "num", label: "Supply rate while waiting (%)", unit: "%", dec: 2,
+  prompt: p => `${settings(p)} Using your utilization rounded to 2 decimals, what's the supply rate while Maple waits? Give a percent to 2 decimal places.`,
+  ans: p => rs(p, p.U3r), alt: p => [rsC(p, p.U3r)], tol: () => 0.006,
+  hint: "Utilization is above optimal, so use the steep formula for the borrow rate first. Then supply rate = borrow rate × utilization as a decimal × (1 − reserve factor)." });
+add({ id: "3.6", sec: "3", kind: "mc", label: "Illiquid or insolvent?",
+  prompt: () => "The pool is almost fully lent out and Maple can't withdraw everything, but every loan is still backed by more collateral than it owes. Which describes the pool?",
+  opts: ["Illiquid but not insolvent: the money is coming back as loans are repaid, new deposits arrive or liquidations happen", "Insolvent: suppliers have permanently lost money", "Both illiquid and insolvent", "Neither: suppliers can always withdraw everything at once"], correct: 0,
+  hint: "Re-read the third paragraph of the blue box." });
+add({ id: "3.7", sec: "3", kind: "mc", label: "Avoiding getting stuck",
+  prompt: () => "What's the simplest way for Maple to avoid being caught short when a pool is fully borrowed?",
+  opts: ["Only deposit cash Maple won't need on short notice, and keep operating cash like payroll outside the pool", "Deposit payroll cash too, to earn the higher rate", "Borrow from the same pool to cover payroll", "Nothing; it can't be planned for"], correct: 0,
+  hint: "Think about which of Maple's cash it can afford to have locked up for a few days." });
+
+/* Section 4 */
+add({ id: "4.1", sec: "4", kind: "num", label: "Bad debt", unit: "$", dec: 0,
+  prompt: p => `A large borrower owes the pool <strong>${money(p.L)}</strong>. Their collateral token loses much of its backing in a hack outside the protocol, and liquidators manage to sell it for only <strong>${money(p.C1)}</strong>. How much bad debt is left?`,
+  ans: p => p.bad, tol: () => 1,
+  hint: "What the borrower owes minus what the collateral sold for." });
+add({ id: "4.2", sec: "4", kind: "num", label: "Loss left for suppliers", unit: "$", dec: 0,
+  prompt: p => `Using this lab's loss order: the treasury covers the first <strong>${money(p.F1)}</strong>, and the backstop vault holds <strong>${money(p.Sv)}</strong>. How much loss is left for suppliers?`,
+  ans: p => p.supLoss, tol: () => 1,
+  hint: "Bad debt minus the treasury's part minus the backstop vault." });
+add({ id: "4.3", sec: "4", kind: "num", label: "Maple's share of the loss", unit: "$", dec: 0,
+  prompt: p => `Maple has <strong>${money(p.D)}</strong> in a pool with <strong>${money(p.T)}</strong> supplied. What's Maple's share of that loss? Round to the nearest dollar.`,
+  ans: p => p.share, tol: () => 1,
+  hint: "Loss left for suppliers × (Maple's deposit ÷ total supplied)." });
+add({ id: "4.4", sec: "4", kind: "num", label: "Years of income to earn it back", unit: "years", dec: 2,
+  prompt: p => `Maple's estimated pool income is <strong>${money(Math.round(income(p)))}</strong> a year (that's the Section 2 estimate). How many years of that income would it take to earn back Maple's share of the loss? Give 2 decimal places.`,
+  ans: p => p.share / Math.round(income(p)), tol: p => Math.max(0.006, p.share / Math.round(income(p)) * 0.003),
+  hint: "Maple's share of the loss ÷ yearly pool income." });
+add({ id: "4.5", sec: "4", kind: "mc", label: "Which oracle error hurts suppliers",
+  prompt: () => "Which price-feed error hurts a supplier like Maple most directly?",
+  opts: ["Collateral reported as worth more than it really is, so risky loans aren't liquidated in time", "Collateral reported as worth less than it really is, so healthy loans get liquidated", "USDC reported at exactly $1.00", "A price update arriving one second late during a calm market"], correct: 0,
+  hint: "Re-read the purple box: which failure leaves suppliers holding bad debt?" });
+add({ id: "4.6", sec: "4", kind: "mc", label: "What caused the April 2026 risk",
+  prompt: () => "In the April 2026 case, Aave's own code wasn't hacked. So what put its suppliers at risk?",
+  opts: ["A token the pool accepted as collateral lost its backing in a hack outside Aave", "A bug in Aave's interest rate formula", "The Federal Reserve raised interest rates", "Suppliers forgot to collect their interest"], correct: 0,
+  hint: "Re-read the real case in Section 3." });
+add({ id: "4.7", sec: "4", kind: "text", label: "Written: is the extra yield worth the risk?",
+  prompt: () => "Compare Maple's yearly income from the pool with its possible share of a loss. Is the extra yield worth the risk? What would change your answer?" });
+
+/* Section 5 */
+add({ id: "5.1", sec: "5a", kind: "num", label: "Findings acknowledged, not fixed", unit: "findings", dec: 0,
+  prompt: () => `How many findings in this audit were acknowledged but <em>not</em> fixed?`,
+  ans: p => p.meA + p.loA, tol: () => 0,
+  hint: "Add up the \"Acknowledged\" column across every severity." });
+add({ id: "5.2", sec: "5a", kind: "mc", label: "No critical findings: safe to deposit $5M?",
+  prompt: () => "The audit found no critical problems. Does that mean Maple can safely deposit $5 million?",
+  opts: ["No. The audit checked the code at one version; it doesn't cover collateral tokens, price feeds, governance, liquidity or later code changes", "Yes. No critical findings means the protocol is safe", "Yes, as long as every high finding was fixed", "No, because audits are never done by real security firms"], correct: 0,
+  hint: "Look at what the summary lists as out of scope." });
+add({ id: "5.3", sec: "5a", kind: "mc", label: "What the audit left out",
+  prompt: () => "Which risk from the April 2026 Aave case would this audit <em>not</em> have caught?",
+  opts: ["A problem with a collateral token and the bridge that issues it", "A bug in the pool's interest rate formula", "A bug in the withdraw function", "Rounding errors in interest calculations"], correct: 0,
+  hint: "Compare the real case in Section 3 with the \"Out of scope\" list." });
+add({ id: "5.4", sec: "5a", kind: "mc", label: "Lesson from Euler",
+  prompt: () => "Euler had 10 audits and was still exploited for about $196 million. What's the best lesson for Maple?",
+  opts: ["Audits lower the risk but can't remove it, so limit how much you deposit and plan for a loss", "More audits guarantee safety", "Never use a protocol that has been audited", "Audits only matter for banks"], correct: 0,
+  hint: "Re-read the second paragraph of the blue box." });
+add({ id: "5.5", sec: "5b", kind: "num", label: "Most Maple can deposit under policy", unit: "$", dec: 0,
+  prompt: p => `Maple has <strong>${money(p.cash)}</strong> in cash. Its investment policy caps any single DeFi protocol at <strong>${p.cap}%</strong> of cash. What's the most Maple can deposit in this pool?`,
+  ans: p => p.cash * p.cap / 100, tol: () => 1,
+  hint: "Cash × the cap as a decimal." });
+add({ id: "5.6", sec: "5b", kind: "mc", label: "Does the planned deposit fit the policy?",
+  prompt: p => `The CFO wants to deposit <strong>${money(p.D)}</strong>. Does that fit the policy?`,
+  opts: ["Yes, it's at or under the cap", "No, it's over the cap"], correct: p => (p.D <= p.cash * p.cap / 100 ? 0 : 1), fixedOrder: true,
+  hint: "Compare the planned deposit with your answer above." });
+add({ id: "5.7", sec: "5b", kind: "sel", label: "Control to insist on first",
+  prompt: () => "Before any deposit, which control would you insist on first?",
+  opts: ["A board-approved investment policy with size limits per protocol", "Approved protocols only: several audits, a long track record and an active backstop", "Keys held by a qualified custodian with multi-signature approval", "Daily monitoring of utilization, with automatic withdrawal triggers", "An exit plan: keep enough cash outside the pool to cover the next month's payments"] });
+
+/* Section 6 */
+add({ id: "6.1", sec: "6", kind: "text", label: "Written: CFO recommendation",
+  prompt: () => "Should Maple put part of its cash in this lending pool? Take a clear position in your first sentence. If yes, say how much and under what conditions (limits, controls, when to pull out). If no, say what would have to change. Support your answer with your own numbers: the pool's yield compared with T-bills, how much Maple could withdraw in a crunch, and its possible share of a loss." });
+
+const QBYID = Object.fromEntries(Q.map(q => [q.id, q]));
+{ const cnt = {}; for (const q of Q) { const k = q.sec[0]; cnt[k] = (cnt[k] || 0) + 1; q.n = k + "." + cnt[k]; } }   // numbers shown to students run 1.1, 1.2, ... with no gaps
+const CHECKED = Q.filter(q => ["num", "mc"].includes(q.kind));
+
+const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+/* ---------------- the made-up audit summary in 5A (its counts differ per student) ---------------- */
+function auditHtml(p) {
+  const row = (sev, n, a) => `<tr><td>${sev}</td><td class="r">${n}</td><td class="r">${n - a}</td><td class="r">${a}</td></tr>`;
+  return `<div class="explorer" aria-label="Audit summary"><div class="bar">Security Review: Lending Pool Contracts (made up for this lab)</div><table>
+    <tr><td>Reviewed by</td><td>Northgate Security (a fictional firm)</td></tr>
+    <tr><td>Code version</td><td class="h">Commit ${p.commit}</td></tr>
+    <tr><td>In scope</td><td>Pool contract (deposit, borrow, repay, withdraw), interest rate formula, liquidation logic, receipt (aToken) contracts</td></tr>
+    <tr><td>Out of scope</td><td>Price-feed (oracle) providers · collateral tokens and the bridges that issue them · governance votes and setting changes · any code deployed after this commit · the website</td></tr>
+  </table>
+  <div class="scroll" style="padding:8px 12px"><table class="t" style="margin:0"><tr><th>Severity</th><th>Findings</th><th>Fixed</th><th>Acknowledged</th></tr>
+    ${row("Critical", 0, 0)}${row("High", p.hi, 0)}${row("Medium", p.me, p.meA)}${row("Low", p.lo, p.loA)}</table></div>
+  <table><tr><td>Sample finding</td><td><strong>M-02 (Medium, acknowledged):</strong> the pool doesn't check how old a price-feed update is before using it. If the feed stopped updating, the pool could act on an outdated price. <em>Team response: we rely on the oracle provider's own monitoring.</em></td></tr></table></div>`;
+}
+const EXTRAS = { "5a": auditHtml };
+
+/* ---------------- state ---------------- */
+let started = false;
+const S = { ans: {}, tries: {}, lastWrong: {} };   // answers, wrong-try counts, last wrong answer per question
+let dirty = false;
+
+function correctMC(q) { return typeof q.correct === "function" ? q.correct(P) : q.correct; }
+function parseNum(s) {
+  if (s === undefined || s === null) return NaN;
+  const t = String(s).replace(/[$,\s%]/g, "").replace(/[−–]/g, "-");
+  if (t === "" || !/^-?\d*\.?\d+$/.test(t)) return NaN;
+  return parseFloat(t);
+}
+function isRight(q, v = S.ans[q.id]) {
+  if (v === undefined || v === "" || v === null) return null;
+  if (q.kind === "num") { const n = parseNum(v); if (isNaN(n)) return false; return [q.ans(P), ...(q.alt ? q.alt(P) : [])].some(t => Math.abs(n - t) <= q.tol(P) + 1e-9); }
+  if (q.kind === "mc") return +v === correctMC(q);
+  return null;
+}
+const words = s => (String(s || "").trim().match(/\S+/g) || []).length;
+
+/* ---------------- rendering the questions ---------------- */
+function renderAll() {
+  document.querySelectorAll(".qlock").forEach(e => e.classList.toggle("hidden", started));
+  document.querySelectorAll(".qs").forEach(box => {
+    box.innerHTML = "";
+    if (!started) return;
+    const sec = box.dataset.sec;
+    if (EXTRAS[sec]) box.insertAdjacentHTML("beforeend", EXTRAS[sec](P));
+    for (const q of Q.filter(q => q.sec === sec)) box.appendChild(renderQ(q));
+  });
+  refreshAll();
+}
+function renderQ(q) {
+  const d = document.createElement("div");
+  d.className = "q"; d.dataset.q = q.id;
+  let h = `<p class="prompt"><span class="qn">${q.n}</span>${q.prompt(P)}</p>`;
+  if (q.kind === "num") {
+    const pre = q.unit === "$" ? '<span class="unit">$</span>' : "";
+    const post = q.unit && q.unit !== "$" ? `<span class="unit">${q.unit}</span>` : "";
+    h += `<div class="row">${pre}<input class="num" inputmode="decimal" autocomplete="off" placeholder="Your answer" aria-label="Answer to ${q.n}">${post}<span class="res"></span></div>`;
+  } else if (q.kind === "mc") {
+    const order = q.fixedOrder ? q.opts.map((_, i) => i) : shuffle("mc." + q.id, q.opts.length);
+    h += '<div class="opts">' + order.map(i => `<label><input type="radio" name="mc${q.id}" value="${i}"><span>${q.opts[i]}</span></label>`).join("") + '</div><div class="res"></div>';
+  } else if (q.kind === "sel") {
+    h += `<div class="row"><select aria-label="${escHtml(q.label)}"><option value="">Choose one…</option>${q.opts.map((o, i) => `<option value="${i}">${escHtml(o)}</option>`).join("")}</select></div>
+      <textarea class="why-in" maxlength="1500" style="min-height:70px" placeholder="Explain your reasoning." aria-label="Why, for ${escHtml(q.label)}"></textarea>`;
+  } else if (q.kind === "text") {
+    h += `<textarea maxlength="6000" placeholder="Your answer" aria-label="Your answer to ${q.n}"></textarea>`;
+  }
+  if (q.hint) h += `<div class="hint">Hint: ${q.hint}</div>`;
+  d.innerHTML = h;
+  wireQ(q, d);
+  return d;
+}
+function wireQ(q, d) {
+  const v = S.ans[q.id];
+  if (q.kind === "num") {
+    const inp = d.querySelector("input");
+    if (v !== undefined) inp.value = v;
+    inp.addEventListener("input", () => { S.ans[q.id] = inp.value; dirty = true; refreshQ(q); refreshProgress(); });
+    inp.addEventListener("change", () => { countTry(q, inp.value.trim()); refreshQ(q); refreshProgress(); });
+  } else if (q.kind === "mc") {
+    d.querySelectorAll("input").forEach(r => {
+      if (v !== undefined && +r.value === +v) r.checked = true;
+      r.addEventListener("change", () => { S.ans[q.id] = r.value; dirty = true; countTry(q, r.value); refreshQ(q); refreshProgress(); });
+    });
+  } else if (q.kind === "sel") {
+    const sel = d.querySelector("select"), ta = d.querySelector("textarea");
+    if (v !== undefined) sel.value = v;
+    if (S.ans[q.id + "w"] !== undefined) ta.value = S.ans[q.id + "w"];
+    sel.addEventListener("change", () => { S.ans[q.id] = sel.value; dirty = true; refreshProgress(); });
+    ta.addEventListener("input", () => { S.ans[q.id + "w"] = ta.value; dirty = true; refreshQ(q); refreshProgress(); });
+  } else if (q.kind === "text") {
+    const ta = d.querySelector("textarea");
+    if (v !== undefined) ta.value = v;
+    ta.addEventListener("input", () => { S.ans[q.id] = ta.value; dirty = true; refreshQ(q); refreshProgress(); });
+  }
+}
+function countTry(q, val) {
+  if (val === "" || val === undefined) return;
+  const ok = isRight(q, val);
+  if (ok === false && S.lastWrong[q.id] !== val) { S.tries[q.id] = (S.tries[q.id] || 0) + 1; S.lastWrong[q.id] = val; dirty = true; }
+}
+function refreshQ(q) {
+  const d = document.querySelector(`.q[data-q="${CSS.escape(q.id)}"]`);
+  if (!d) return;
+  const res = d.querySelector(".res"), hint = d.querySelector(".hint"), t = S.tries[q.id] || 0;
+  if (q.kind === "text" || q.kind === "sel") return;
+  const ok = isRight(q);
+  let msg = "";
+  if (ok === null) msg = "";
+  else if (ok) msg = '<span class="ok">✓ right</span>';
+  else msg = '<span class="bad">✗ not yet, try again</span>';
+  if (t) msg += ` <span class="muted">(${t} wrong ${t === 1 ? "try" : "tries"})</span>`;
+  res.innerHTML = msg;
+  if (hint) hint.classList.toggle("show", !ok && t > 0);
+}
+function refreshAll() { if (started) Q.forEach(q => refreshQ(q)); refreshProgress(); }
+function sectionStats() {
+  const out = {};
+  for (const s of ["1", "2", "3", "4", "5", "6"]) {
+    const qs = Q.filter(q => q.sec[0] === s);
+    const ch = qs.filter(q => CHECKED.includes(q));
+    const wr = qs.filter(q => q.kind === "text" || q.kind === "sel");
+    out[s] = { right: ch.filter(q => isRight(q) === true).length, total: ch.length,
+      written: wr.filter(q => q.kind === "text" ? words(S.ans[q.id]) > 0 : (S.ans[q.id] !== undefined && S.ans[q.id] !== "" && words(S.ans[q.id + "w"]) > 0)).length, wtotal: wr.length,
+      tries: qs.reduce((a, q) => a + (S.tries[q.id] || 0), 0) };
+  }
+  return out;
+}
+function refreshProgress() {
+  if (!started) { $("progress").classList.add("hidden"); $("finalProgress").innerHTML = ""; return; }
+  const st = sectionStats();
+  const tr = Object.entries(st).map(([s, v]) => `<tr><td>${SECNAMES[s]}</td><td>${v.total ? `${v.right} of ${v.total} checked answers right` : ""}</td><td>${v.wtotal ? `${v.written} of ${v.wtotal} written answers filled in` : ""}</td></tr>`).join("");
+  const tot = Object.values(st).reduce((a, v) => [a[0] + v.right, a[1] + v.total, a[2] + v.tries], [0, 0, 0]);
+  const html = `<table>${tr}</table><p style="margin:6px 0 0"><strong>Total: ${tot[0]} of ${tot[1]} checked answers right</strong> · ${tot[2]} wrong ${tot[2] === 1 ? "try" : "tries"} · your student code: <span class="mono">${P.code}</span></p>`;
+  $("progress").innerHTML = html; $("progress").classList.remove("hidden");
+  $("finalProgress").innerHTML = html;
+}
+
+/* ---------------- start / change name ---------------- */
+function start(fromLoad = false) {
+  const n = $("name").value.trim();
+  if (!n || n.split(/\s+/).length < 2) { $("startStatus").innerHTML = '<span class="bad">Type your first and last name first.</span>'; $("name").focus(); return false; }
+  SEED = normName(n);
+  P = makeParams();
+  started = true;
+  $("name").readOnly = true;
+  $("startBtn").classList.add("hidden");
+  $("changeName").classList.remove("hidden");
+  setDl(true);
+  $("startStatus").innerHTML = `<span class="ok">✓ Started.</span> Your numbers are ready. Your student code is <span class="mono">${P.code}</span>.` + (fromLoad ? "" : " Work through the sections below, and download your work before you close this page.");
+  renderAll();
+  return true;
+}
+$("startBtn").addEventListener("click", () => start());
+$("name").addEventListener("keydown", e => { if (e.key === "Enter" && !started) start(); });
+$("changeName").addEventListener("click", () => {
+  const any = Object.keys(S.ans).length > 0;
+  if (any && !confirm("Changing your name gives you different numbers and clears every answer on this page. Download your work first if you want to keep it. Continue?")) return;
+  S.ans = {}; S.tries = {}; S.lastWrong = {}; started = false; dirty = false; P = null;
+  $("name").readOnly = false; $("startBtn").classList.remove("hidden"); $("changeName").classList.add("hidden");
+  setDl(false); $("startStatus").textContent = "";
+  renderAll(); $("name").focus();
+});
+
+/* ---------------- Excel export (a real .xlsx, built in the page) ---------------- */
+const xmlText = s => escHtml(String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ""));
+const colName = n => { let s = ""; n++; while (n) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+function sheetXml(rows, widths) {
+  let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+  if (widths) x += "<cols>" + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("") + "</cols>";
+  x += "<sheetData>";
+  rows.forEach((row, r) => {
+    x += `<row r="${r + 1}">`;
+    row.forEach((cell, c) => {
+      if (cell === null || cell === undefined || cell === "") return;
+      let v = cell, st = "";
+      if (typeof cell === "object") { v = cell.v; st = cell.b ? ' s="1"' : (cell.w ? ' s="2"' : ""); }
+      const ref = colName(c) + (r + 1);
+      if (typeof v === "number" && isFinite(v)) x += `<c r="${ref}"${st}><v>${v}</v></c>`;
+      else x += `<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xmlText(v)}</t></is></c>`;
+    });
+    x += "</row>";
+  });
+  return x + "</sheetData></worksheet>";
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = d => { let c = 0xFFFFFFFF; for (let i = 0; i < d.length; i++) c = CRC[(c ^ d[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zip(files) {   // files: [{name, text}] -> Uint8Array (stored, no compression)
+  const parts = [], central = []; let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, 0, true); lh.setUint16(12, 0x21, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, 0, true); ch.setUint16(14, 0x21, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true); ch.setUint16(36, 0, true);
+    ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((a, p) => a + p.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  const all = [...parts, ...central, new Uint8Array(end.buffer)];
+  const out = new Uint8Array(all.reduce((a, p) => a + p.length, 0)); let p = 0;
+  for (const a of all) { out.set(a, p); p += a.length; }
+  return out;
+}
+const b64 = s => { const bytes = enc.encode(s); let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+const unb64 = s => new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0)));
+function answerText(q) {
+  const v = S.ans[q.id];
+  if (q.kind === "mc") return v === undefined ? "" : q.opts[+v];
+  if (q.kind === "sel") return v === undefined || v === "" ? "" : q.opts[+v];
+  return v === undefined ? "" : String(v);
+}
+function buildXlsx() {
+  const B = v => ({ v, b: true }), Wr = v => ({ v, w: true });
+  const st = sectionStats();
+  const tot = Object.values(st).reduce((a, v) => [a[0] + v.right, a[1] + v.total, a[2] + v.tries], [0, 0, 0]);
+  const data = { tag: DATA_TAG, name: $("name").value.trim(), ans: S.ans, tries: S.tries, lastWrong: S.lastWrong,
+    fields: { dept: $("dept").value, univ: $("univ").value, course: $("course").value, instructor: $("instructor").value, duedate: $("duedate").value } };
+  const json = JSON.stringify(data);
+  const check = hashHex(SEED + "|" + json).slice(0, 12).toUpperCase();
+  const summary = [
+    [B(COURSE.title)], [],
+    [B("Student"), data.name || "(no name entered)"],
+    [B("Student code"), P.code],
+    [B("Department"), $("dept").value.trim()],
+    [B("University"), $("univ").value.trim()],
+    [B("Course"), $("course").value.trim()],
+    [B("Instructor"), $("instructor").value.trim()],
+    [B("Date"), $("duedate").value.trim()],
+    [B("Downloaded"), new Date().toLocaleString()],
+    [B("Check code"), check],
+    [], [B("Section"), B("Checked answers right"), B("Checked answers"), B("Written answers filled in"), B("Written answers"), B("Wrong tries")],
+    ...Object.entries(st).map(([s, v]) => [SECNAMES[s], v.right, v.total, v.written, v.wtotal, v.tries]),
+    [B("Total"), tot[0], tot[1], "", "", tot[2]],
+    [], ["Instructor: to re-check this file, open the lab page and click \"Load my saved work\". The page re-grades every answer from the student's name, ignoring any edits made to these sheets."],
+  ];
+  const answers = [[B("Section"), B("Question"), B("What it asks"), B("Student's answer"), B("Right?"), B("Wrong tries")]];
+  for (const q of Q) {
+    if (q.kind === "text" || q.kind === "sel") continue;
+    const ok = isRight(q);
+    answers.push([SECNAMES[q.sec[0]], q.n, q.label, answerText(q) || "(blank)", ok === null ? "blank" : ok ? "right" : "WRONG", S.tries[q.id] || 0]);
+  }
+  const written = [[B("Question"), B("What it asks"), B("Choice"), B("Student's written answer"), B("Words")]];
+  for (const q of Q) {
+    if (q.kind === "sel") written.push([q.n, q.label, answerText(q) || "(none)", Wr(S.ans[q.id + "w"] || "(blank)"), words(S.ans[q.id + "w"])]);
+    if (q.kind === "text") written.push([q.n, q.label, "", Wr(S.ans[q.id] || "(blank)"), words(S.ans[q.id])]);
+  }
+  const enc64 = b64(json), chunks = [];
+  for (let i = 0; i < enc64.length; i += 30000) chunks.push([enc64.slice(i, i + 30000)]);
+  const dataSheet = [[DATA_TAG], ...chunks];
+  const names = ["Summary", "Answers", "Written answers", "data"];
+  const sheets = [sheetXml(summary, [30, 34, 16, 26, 16, 12]), sheetXml(answers, [24, 9, 40, 60, 9, 11]), sheetXml(written, [9, 40, 40, 100, 8]),
+                  sheetXml(dataSheet, [20])];
+  const files = [
+    { name: "[Content_Types].xml", text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+        names.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") + "</Types>" },
+    { name: "_rels/.rels", text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+    { name: "xl/workbook.xml", text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+        names.map((n, i) => `<sheet name="${xmlText(n)}" sheetId="${i + 1}"${n === "data" ? ' state="hidden"' : ""} r:id="rId${i + 1}"/>`).join("") + "</sheets></workbook>" },
+    { name: "xl/_rels/workbook.xml.rels", text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        names.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") +
+        `<Relationship Id="rId${names.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: "xl/styles.xml", text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' },
+    ...sheets.map((x, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, text: x })),
+  ];
+  return zip(files);
+}
+function download() {
+  if (!started) return;
+  const bytes = buildXlsx();
+  const nm = $("name").value.trim().replace(/[^A-Za-z0-9 _-]/g, "").replace(/\s+/g, "_") || "student";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  a.download = `DeFi_Lending_Lab_${nm}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  dirty = false;
+  const st = sectionStats(); const tot = Object.values(st).reduce((x, v) => [x[0] + v.right, x[1] + v.total], [0, 0]);
+  $("dlNote").textContent = `Downloaded at ${new Date().toLocaleTimeString()}. ${tot[0]} of ${tot[1]} checked answers right so far.`;
+}
+const setDl = on => { $("download").disabled = $("dlTop").disabled = !on; document.querySelectorAll(".dlBtn").forEach(b => b.disabled = !on); };
+document.querySelectorAll(".dlBtn").forEach(b => b.addEventListener("click", download));
+document.querySelectorAll(".ldBtn").forEach(b => b.addEventListener("click", () => $("loadFile").click()));
+$("download").addEventListener("click", download);
+$("dlTop").addEventListener("click", download);
+
+/* ---------------- loading a saved file back in ---------------- */
+async function inflateRaw(bytes) {
+  if (typeof DecompressionStream === "undefined") throw new Error("nodecomp");
+  const ds = new DecompressionStream("deflate-raw");
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function readZip(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("not a zip");
+  const count = dv.getUint16(eocd + 10, true); let p = dv.getUint32(eocd + 16, true);
+  const files = {};
+  for (let k = 0; k < count; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error("bad zip");
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loff = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    const dstart = loff + 30 + dv.getUint16(loff + 26, true) + dv.getUint16(loff + 28, true);
+    files[name] = { method, raw: u8.subarray(dstart, dstart + csize) };
+    p += 46 + nlen + xlen + clen;
+  }
+  return async name => { const f = files[name]; if (!f) return null; const b = f.method === 8 ? await inflateRaw(f.raw) : f.raw; return new TextDecoder().decode(b); };
+}
+async function readLabData(buf) {
+  const get = await readZip(buf);
+  const parse = s => new DOMParser().parseFromString(s, "application/xml");
+  const wb = parse(await get("xl/workbook.xml"));
+  const RNS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  const sh = [...wb.getElementsByTagName("sheet")].find(e => e.getAttribute("name") === "data");
+  if (!sh) throw new Error("no data sheet");
+  const rid = sh.getAttributeNS(RNS, "id") || sh.getAttribute("r:id");
+  const rels = parse(await get("xl/_rels/workbook.xml.rels"));
+  let target = [...rels.getElementsByTagName("Relationship")].find(e => e.getAttribute("Id") === rid).getAttribute("Target");
+  target = target.startsWith("/") ? target.slice(1) : "xl/" + target;
+  const ssText = await get("xl/sharedStrings.xml");
+  const shared = ssText ? [...parse(ssText).getElementsByTagName("si")].map(si => [...si.getElementsByTagName("t")].map(t => t.textContent).join("")) : [];
+  const ws = parse(await get(target));
+  const vals = [];
+  for (const c of ws.getElementsByTagName("c")) {
+    if (!/^A\d+$/.test(c.getAttribute("r") || "A1")) continue;
+    const t = c.getAttribute("t");
+    if (t === "s") vals.push(shared[+c.getElementsByTagName("v")[0].textContent]);
+    else if (t === "inlineStr") vals.push([...c.getElementsByTagName("t")].map(x => x.textContent).join(""));
+    else { const v = c.getElementsByTagName("v")[0]; vals.push(v ? v.textContent : ""); }
+  }
+  if (vals[0] !== DATA_TAG) throw new Error("not a lab file");
+  const data = JSON.parse(unb64(vals.slice(1).join("")));
+  if (data.tag !== DATA_TAG) throw new Error("not a lab file");
+  return data;
+}
+$("loadBtn").addEventListener("click", () => $("loadFile").click());
+$("loadFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const data = await readLabData(await f.arrayBuffer());
+    if (started && Object.keys(S.ans).length && !confirm(`Replace everything on this page with the work saved for "${data.name}"?`)) return;
+    started = false;
+    S.ans = data.ans || {}; S.tries = data.tries || {}; S.lastWrong = data.lastWrong || {};
+    $("name").readOnly = false; $("name").value = data.name || "";
+    for (const k of ["dept", "univ", "course", "instructor", "duedate"]) if (data.fields && data.fields[k] && !$(k).readOnly) $(k).value = data.fields[k];
+    if (!start(true)) return;
+    dirty = false;
+    const st = sectionStats(); const tot = Object.values(st).reduce((x, v) => [x[0] + v.right, x[1] + v.total], [0, 0]);
+    $("startStatus").innerHTML = `<span class="ok">✓ Loaded the work saved for ${escHtml(data.name)}.</span> Re-checked from the name: ${tot[0]} of ${tot[1]} checked answers right. Student code <span class="mono">${P.code}</span>. Pick up where you left off.`;
+  } catch (err) {
+    $("startStatus").innerHTML = err && err.message === "nodecomp"
+      ? '<span class="bad">This browser is too old to read a file that was re-saved in Excel.</span> Update your browser (Chrome, Edge, Firefox or Safari), or load the original file this page downloaded.'
+      : '<span class="bad">That file couldn\'t be read.</span> Choose the Excel file this page downloaded. If it was opened and saved again in Excel or Numbers, try an earlier copy.';
+  }
+});
+window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------- instructor answer key ---------------- */
+function keyRows() {
+  return Q.filter(q => CHECKED.includes(q)).map(q => {
+    let a;
+    if (q.kind === "num") a = (q.unit === "$" ? money(q.ans(P), q.dec) : fmt(q.ans(P), q.dec) + (q.unit ? " " + q.unit : ""));
+    else a = q.opts[correctMC(q)];
+    return `<tr><td>${q.n}</td><td>${escHtml(q.label)}</td><td>${escHtml(a)}</td></tr>`;
+  }).join("");
+}
+if (/[?&]instructor\b/.test(location.search)) $("instr").classList.remove("hidden");
+$("keyBtn").addEventListener("click", () => {
+  if (hashHex($("keyPass").value) !== COURSE.instructorKeyHash) { $("keyStatus").innerHTML = '<span class="bad">Wrong passcode.</span>'; return; }
+  if (!started) { $("keyStatus").innerHTML = '<span class="bad">Type the student\'s name at the top and click Start first.</span>'; return; }
+  $("keyStatus").innerHTML = `<span class="ok">Answer key for ${escHtml($("name").value)} (code ${P.code})</span>`;
+  $("keyOut").innerHTML = `<table class="t"><tr><th>#</th><th>Question</th><th>Answer</th></tr>${keyRows()}</table>`;
+});
+
+/* ---------------- title page ---------------- */
+function setupTitlePage() {
+  $("tpTitle").textContent = COURSE.title;
+  document.title = COURSE.title;
+  for (const [id, key] of [["dept", "department"], ["univ", "university"], ["course", "course"], ["instructor", "instructor"]]) {
+    if (COURSE[key]) { $(id).value = COURSE[key]; $(id).readOnly = true; }
+  }
+  $("duedate").value = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+setupTitlePage(); renderAll();
+window.__lab = { Q, get P() { return P; }, S, isRight, buildXlsx, readLabData, keyRows };   // used by tests
+</script>
+</body>
+</html>
